@@ -1,0 +1,258 @@
+/* ==========================================================
+   Controle de Finanças da Família
+   Identidade visual: "livro-razão" — ledger de contabilidade,
+   tinta preta para receitas, tinta vermelha para despesas,
+   números alinhados como em uma planilha contábil.
+   ========================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+    --paper: #EDEFE7;
+    --paper-line: #D9DCCE;
+    --ink: #1F2A24;
+    --ledger-green: #2F4F3E;
+    --ledger-green-dark: #223B2F;
+    --ink-red: #A73C3C;
+    --gold: #B4863A;
+    --card-bg: #F7F8F3;
+    --shadow: rgba(31, 42, 36, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--paper);
+    background-image:
+        linear-gradient(var(--paper-line) 1px, transparent 1px);
+    background-size: 100% 2.1rem;
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.5;
+}
+
+h1, h2, h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    margin: 0 0 0.4em;
+    color: var(--ledger-green-dark);
+}
+
+a { color: var(--ledger-green-dark); }
+
+.wrapper {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0 1.5rem 3rem;
+}
+
+/* ---------- Topo / navegação ---------- */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.3rem 1.5rem;
+    background: var(--ledger-green);
+    color: #F4F5EF;
+    border-bottom: 4px double var(--gold);
+}
+
+.topbar .marca {
+    font-family: 'Fraunces', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+}
+
+.topbar nav a {
+    color: #E7E9DE;
+    text-decoration: none;
+    margin-left: 1.4rem;
+    font-size: 0.92rem;
+    font-weight: 500;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+}
+.topbar nav a:hover,
+.topbar nav a.ativo {
+    border-bottom-color: var(--gold);
+    color: #fff;
+}
+
+/* ---------- Cartões / caixas ---------- */
+.cartao {
+    background: var(--card-bg);
+    border: 1px solid var(--paper-line);
+    border-radius: 6px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1.4rem;
+    box-shadow: 0 2px 6px var(--shadow);
+}
+
+.grade-resumo {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.6rem 0;
+}
+@media (max-width: 700px) {
+    .grade-resumo { grid-template-columns: 1fr; }
+}
+
+.resumo-item {
+    background: var(--card-bg);
+    border: 1px solid var(--paper-line);
+    border-radius: 6px;
+    padding: 1.1rem 1.3rem;
+    text-align: center;
+}
+.resumo-item .rotulo {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #5B6B5F;
+    display: block;
+    margin-bottom: 0.3rem;
+}
+.resumo-item .numero {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+.resumo-item.receita .numero { color: var(--ledger-green-dark); }
+.resumo-item.despesa .numero { color: var(--ink-red); }
+.resumo-item.saldo .numero {
+    border-bottom: 3px double var(--gold);
+    padding-bottom: 0.15em;
+}
+
+/* ---------- Tabelas estilo razão contábil ---------- */
+table.razao {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.94rem;
+}
+table.razao th {
+    text-align: left;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #5B6B5F;
+    border-bottom: 2px solid var(--ledger-green);
+    padding: 0.5rem 0.6rem;
+}
+table.razao td {
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid var(--paper-line);
+    vertical-align: middle;
+}
+table.razao tr:hover td { background: rgba(47, 79, 62, 0.04); }
+.valor-mono { font-family: 'IBM Plex Mono', monospace; }
+.valor-receita { color: var(--ledger-green-dark); }
+.valor-despesa { color: var(--ink-red); }
+
+/* ---------- "Carimbo" de categoria ---------- */
+.selo {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    border: 1.5px solid currentColor;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transform: rotate(-1.5deg);
+}
+
+/* ---------- Formulários ---------- */
+label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin: 0.9rem 0 0.3rem;
+    color: var(--ledger-green-dark);
+}
+input, select, textarea {
+    width: 100%;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid #B9C0AE;
+    border-radius: 5px;
+    background: #fff;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.94rem;
+}
+input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+}
+
+.btn {
+    display: inline-block;
+    background: var(--ledger-green);
+    color: #fff;
+    border: none;
+    padding: 0.6rem 1.3rem;
+    border-radius: 5px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    margin-top: 1rem;
+}
+.btn:hover { background: var(--ledger-green-dark); }
+.btn.perigo { background: var(--ink-red); }
+.btn.perigo:hover { background: #832C2C; }
+.btn.secundario { background: transparent; color: var(--ledger-green-dark); border: 1.5px solid var(--ledger-green); }
+
+.linha-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+@media (max-width: 600px) {
+    .linha-form { grid-template-columns: 1fr; }
+}
+
+/* ---------- Autenticação ---------- */
+.auth-caixa {
+    max-width: 400px;
+    margin: 4rem auto;
+    background: var(--card-bg);
+    border: 1px solid var(--paper-line);
+    border-radius: 8px;
+    padding: 2rem 2.2rem;
+    box-shadow: 0 4px 16px var(--shadow);
+}
+.auth-caixa h1 { font-size: 1.5rem; text-align: center; }
+.auth-caixa p.subtitulo {
+    text-align: center;
+    color: #5B6B5F;
+    font-size: 0.9rem;
+    margin-top: -0.4rem;
+}
+
+.alerta {
+    padding: 0.7rem 1rem;
+    border-radius: 5px;
+    font-size: 0.88rem;
+    margin-bottom: 1rem;
+}
+.alerta.erro { background: #F6E2E2; color: var(--ink-red); border: 1px solid #E0B0B0; }
+.alerta.sucesso { background: #E4EDE3; color: var(--ledger-green-dark); border: 1px solid #B8CFB4; }
+
+.vazio {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #6B7A6E;
+    font-style: italic;
+}
+
+.acoes-tabela a {
+    font-size: 0.82rem;
+    margin-right: 0.7rem;
+    text-decoration: none;
+}
+.acoes-tabela a.excluir { color: var(--ink-red); }
