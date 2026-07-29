@@ -78,7 +78,7 @@ require __DIR__ . '/includes/header.php';
 
 <h1><?= $edicao ? 'Editar lançamento' : 'Novo lançamento' ?></h1>
 
-<div class="cartao" style="max-width:520px;">
+<div class="cartao" style="max-width:560px;">
     <?php if ($erro): ?><div class="alerta erro"><?= e($erro) ?></div><?php endif; ?>
 
     <form method="post" id="form-transacao">
@@ -126,14 +126,16 @@ require __DIR__ . '/includes/header.php';
             <?php endforeach; ?>
         </select>
         <?php if (!$todas_categorias): ?>
-            <p style="font-size:0.85rem; color:var(--text-muted);">Você ainda não tem categorias. <a href="/categorias.php">Crie uma primeiro</a>.</p>
+            <p style="font-size:13px; color:var(--color-neutral-700);">Você ainda não tem categorias. <a href="/categorias.php">Crie uma primeiro</a>.</p>
         <?php endif; ?>
 
         <label>Descrição (opcional)</label>
         <input type="text" name="descricao" value="<?= e($dados['descricao']) ?>" placeholder="Ex: Supermercado do mês">
 
-        <button type="submit" class="btn"><?= $edicao ? 'Salvar alterações' : 'Adicionar lançamento' ?></button>
-        <a href="/transacoes.php" class="btn secundario">Cancelar</a>
+        <div style="display:flex; gap:10px; margin-top:var(--space-2);">
+            <button type="submit" class="btn" style="flex:1; justify-content:center;"><?= $edicao ? 'Salvar alterações' : 'Adicionar lançamento' ?></button>
+            <a href="/transacoes.php" class="btn secundario" style="flex:1; justify-content:center;">Cancelar</a>
+        </div>
     </form>
 </div>
 

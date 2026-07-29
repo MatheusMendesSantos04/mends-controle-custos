@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS financas_usuarios (
     nome VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     senha_hash VARCHAR(255) NOT NULL,
+    meta_investimento_pct TINYINT UNSIGNED NOT NULL DEFAULT 20,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -20,7 +21,7 @@ CREATE TABLE IF NOT EXISTS financas_categorias (
     usuario_id INT NOT NULL,
     nome VARCHAR(50) NOT NULL,
     tipo ENUM('receita','despesa','investimento') NOT NULL,
-    cor VARCHAR(7) NOT NULL DEFAULT '#2a78d6',
+    cor VARCHAR(40) NOT NULL DEFAULT 'oklch(62% 0.14 255)',
     ordem INT NOT NULL DEFAULT 0,
     FOREIGN KEY (usuario_id) REFERENCES financas_usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

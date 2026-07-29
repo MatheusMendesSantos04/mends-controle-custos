@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($nome === '') {
         $erro = 'Informe um nome para a categoria.';
     } else {
-        $cor = proxima_cor_categoria($pdo, $usuario_id);
+        $cor = proxima_cor_categoria($pdo, $usuario_id, $tipo);
         $stmt = $pdo->prepare('INSERT INTO financas_categorias (usuario_id, nome, tipo, cor) VALUES (?, ?, ?, ?)');
         $stmt->execute([$usuario_id, $nome, $tipo, $cor]);
         header('Location: /categorias.php?tipo=' . urlencode($tipo));
@@ -58,13 +58,14 @@ require __DIR__ . '/includes/header.php';
     <a href="?tipo=investimento" class="<?= $aba==='investimento' ? 'ativo' : '' ?>">Investir</a>
 </div>
 
-<div class="cartao" style="max-width:480px;">
-    <h2 style="font-size:1.05rem;">Nova categoria em <?= e(rotulo_tipo($aba)) ?></h2>
-    <form method="post">
+<div class="cartao" style="max-width:460px;">
+    <form method="post" style="display:flex; gap:10px; align-items:flex-end;">
         <input type="hidden" name="tipo" value="<?= e($aba) ?>">
-        <label>Nome</label>
-        <input type="text" name="nome" placeholder="Ex: Pet, Academia..." required>
-        <button type="submit" class="btn">+ Adicionar categoria</button>
+        <div style="flex:1;">
+            <label style="margin-top:0;">Nova categoria em <?= e(mb_strtolower(rotulo_tipo($aba))) ?></label>
+            <input type="text" name="nome" placeholder="Ex: Pet, Academia..." required>
+        </div>
+        <button type="submit" class="btn" style="margin-top:0;">Adicionar</button>
     </form>
 </div>
 

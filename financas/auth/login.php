@@ -27,8 +27,12 @@ require __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="auth-caixa">
-    <h1>Entrar</h1>
-    <p class="subtitulo">Acesse as finanças da sua família</p>
+    <div class="marca"><span class="bola">M</span> Minhas Finanças</div>
+
+    <div>
+        <h1>Bem-vindo(a) de volta</h1>
+        <p class="subtitulo">Entre para ver seu painel financeiro.</p>
+    </div>
 
     <?php if ($erro): ?><div class="alerta erro"><?= e($erro) ?></div><?php endif; ?>
 
@@ -39,10 +43,10 @@ require __DIR__ . '/../includes/header.php';
         <label>Senha</label>
         <input type="password" name="senha" required>
 
-        <button type="submit" class="btn" style="width:100%;">Entrar</button>
+        <button type="submit" class="btn" style="width:100%; justify-content:center;">Entrar</button>
     </form>
-    <p style="text-align:center; margin-top:1.2rem; font-size:0.9rem;">
-        Ainda não tem conta? <a href="/auth/register.php">Criar conta</a>
+    <p style="text-align:center; font-size:14px; margin:0;">
+        Não tem conta? <a href="/auth/register.php">Criar conta</a>
     </p>
 </div>
 

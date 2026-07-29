@@ -18,21 +18,28 @@ $dataRef = $mes . '-01';
 $stmt->execute([$usuario_id, $dataRef]);
 $linhas = $stmt->fetchAll();
 
-$meses_labels = [];
-$receitas_serie = [];
-$despesas_serie = [];
-$investimentos_serie = [];
 $mapa = [];
 foreach ($linhas as $l) {
     $mapa[$l['mes']][$l['tipo']] = (float) $l['total'];
 }
+$meses_barras = [];
+$nomes_curtos = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 for ($i = 5; $i >= 0; $i--) {
     $referencia = date('Y-m', strtotime($dataRef . " -$i months"));
-    $meses_labels[] = date('M/Y', strtotime($referencia . '-01'));
-    $receitas_serie[] = $mapa[$referencia]['receita'] ?? 0;
-    $despesas_serie[] = $mapa[$referencia]['despesa'] ?? 0;
-    $investimentos_serie[] = $mapa[$referencia]['investimento'] ?? 0;
+    $meses_barras[] = [
+        'label' => $nomes_curtos[(int)date('n', strtotime($referencia . '-01')) - 1],
+        'receita' => $mapa[$referencia]['receita'] ?? 0,
+        'despesa' => $mapa[$referencia]['despesa'] ?? 0,
+        'investimento' => $mapa[$referencia]['investimento'] ?? 0,
+    ];
 }
+$maxBarra = max(1, ...array_map(fn($m) => max($m['receita'], $m['despesa'], $m['investimento']), $meses_barras));
+foreach ($meses_barras as &$m) {
+    $m['receitaH'] = round(($m['receita'] / $maxBarra) * 180);
+    $m['despesaH'] = round(($m['despesa'] / $maxBarra) * 180);
+    $m['investimentoH'] = round(($m['investimento'] / $maxBarra) * 180);
+}
+unset($m);
 
 // --- Despesas por categoria no mês selecionado ---
 $stmt = $pdo->prepare("
@@ -45,94 +52,65 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$usuario_id, $mes]);
 $por_categoria = $stmt->fetchAll();
-
-$cat_labels = array_column($por_categoria, 'nome');
-$cat_valores = array_map('floatval', array_column($por_categoria, 'total'));
-$cat_cores = array_column($por_categoria, 'cor');
+$rosca = segmentos_rosca(array_map(fn($c) => ['nome' => $c['nome'], 'cor' => $c['cor'], 'valor' => (float)$c['total']], $por_categoria));
 
 $titulo_pagina = 'Relatórios';
 require __DIR__ . '/includes/header.php';
 ?>
 
-<h1>Relatórios</h1>
-
-<div class="cartao">
-    <form method="get" style="display:flex; gap:1rem; align-items:end;">
-        <div>
-            <label>Mês de referência (para o gráfico por categoria)</label>
-            <input type="month" name="mes" value="<?= e($mes) ?>" onchange="this.form.submit()">
-        </div>
+<div class="cabecalho-painel">
+    <h1>Relatórios</h1>
+    <form method="get">
+        <input type="month" name="mes" value="<?= e($mes) ?>" onchange="this.form.submit()" style="padding:9px 14px;">
     </form>
 </div>
 
 <div class="cartao">
-    <h2 style="font-size:1.05rem;">Receitas, despesas e investimentos — últimos 6 meses</h2>
-    <canvas id="graficoEvolucao" height="110"></canvas>
+    <h2>Receita x Despesa x Investido — últimos 6 meses</h2>
+    <div class="legenda-barras">
+        <span class="item"><span class="ponto" style="background:var(--receita);"></span>Receita</span>
+        <span class="item"><span class="ponto" style="background:var(--despesa);"></span>Despesa</span>
+        <span class="item"><span class="ponto" style="background:var(--investir);"></span>Investido</span>
+    </div>
+    <div class="grafico-barras">
+        <?php foreach ($meses_barras as $m): ?>
+            <div class="coluna-mes">
+                <div class="barras">
+                    <div class="barra" style="height:<?= $m['receitaH'] ?>px; background:var(--receita);"></div>
+                    <div class="barra" style="height:<?= $m['despesaH'] ?>px; background:var(--despesa);"></div>
+                    <div class="barra" style="height:<?= $m['investimentoH'] ?>px; background:var(--investir);"></div>
+                </div>
+                <span class="rotulo-mes"><?= e($m['label']) ?></span>
+            </div>
+        <?php endforeach; ?>
+    </div>
 </div>
 
-<div class="cartao">
-    <h2 style="font-size:1.05rem;">Despesas por categoria — <?= e(date('m/Y', strtotime($mes . '-01'))) ?></h2>
-    <?php if (!$cat_labels): ?>
-        <p class="vazio">Nenhuma despesa registrada neste mês.</p>
+<div class="cartao" style="max-width:420px;">
+    <h2>Despesas por categoria do mês</h2>
+    <?php if (!$rosca): ?>
+        <p class="vazio">Nenhuma despesa registrada.</p>
     <?php else: ?>
-        <canvas id="graficoCategorias" height="110"></canvas>
-        <div class="legenda-doughnut" id="legendaCategorias"></div>
+        <div style="display:flex; justify-content:center; margin-bottom:var(--space-4);">
+            <svg width="168" height="168" viewBox="0 0 168 168">
+                <g transform="translate(84,84) rotate(-90)">
+                    <circle r="70" fill="none" stroke="var(--color-neutral-200)" stroke-width="26"/>
+                    <?php foreach ($rosca as $seg): ?>
+                        <circle r="70" fill="none" stroke="<?= e($seg['cor']) ?>" stroke-width="26"
+                            stroke-dasharray="<?= e($seg['dasharray']) ?>" stroke-dashoffset="<?= e((string)$seg['dashoffset']) ?>"></circle>
+                    <?php endforeach; ?>
+                </g>
+            </svg>
+        </div>
+        <div class="legenda-doughnut">
+            <?php foreach ($rosca as $seg): ?>
+                <div class="item">
+                    <span class="rotulo-item"><span class="ponto" style="background:<?= e($seg['cor']) ?>;"></span><?= e($seg['nome']) ?></span>
+                    <span class="pct"><?= $seg['pct'] ?>%</span>
+                </div>
+            <?php endforeach; ?>
+        </div>
     <?php endif; ?>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script>
-const estilo = getComputedStyle(document.body);
-const corReceita = estilo.getPropertyValue('--receita').trim();
-const corDespesa = estilo.getPropertyValue('--despesa').trim();
-const corInvestir = estilo.getPropertyValue('--investir').trim();
-const corGrid = estilo.getPropertyValue('--gridline').trim();
-const corTexto = estilo.getPropertyValue('--text-secondary').trim();
-
-new Chart(document.getElementById('graficoEvolucao'), {
-    type: 'bar',
-    data: {
-        labels: <?= json_encode($meses_labels) ?>,
-        datasets: [
-            { label: 'Receitas', data: <?= json_encode($receitas_serie) ?>, backgroundColor: corReceita, borderRadius: 4 },
-            { label: 'Despesas', data: <?= json_encode($despesas_serie) ?>, backgroundColor: corDespesa, borderRadius: 4 },
-            { label: 'Investido', data: <?= json_encode($investimentos_serie) ?>, backgroundColor: corInvestir, borderRadius: 4 }
-        ]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { position: 'bottom', labels: { color: corTexto } } },
-        scales: {
-            y: { beginAtZero: true, grid: { color: corGrid }, ticks: { color: corTexto } },
-            x: { grid: { display: false }, ticks: { color: corTexto } }
-        }
-    }
-});
-
-<?php if ($cat_labels): ?>
-const labelsCat = <?= json_encode($cat_labels) ?>;
-const coresCat = <?= json_encode($cat_cores) ?>;
-new Chart(document.getElementById('graficoCategorias'), {
-    type: 'doughnut',
-    data: {
-        labels: labelsCat,
-        datasets: [{
-            data: <?= json_encode($cat_valores) ?>,
-            backgroundColor: coresCat,
-            borderWidth: 2,
-            borderColor: estilo.getPropertyValue('--surface').trim()
-        }]
-    },
-    options: { responsive: true, cutout: '65%', plugins: { legend: { display: false } } }
-});
-const legenda = document.getElementById('legendaCategorias');
-labelsCat.forEach((rotulo, i) => {
-    const item = document.createElement('span');
-    item.className = 'item';
-    item.innerHTML = `<span class="ponto" style="background:${coresCat[i]}"></span>${rotulo}`;
-    legenda.appendChild(item);
-});
-<?php endif; ?>
-</script>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

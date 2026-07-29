@@ -46,13 +46,17 @@ require __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="auth-caixa">
-    <h1>Criar conta</h1>
-    <p class="subtitulo">Comece a controlar suas finanças em poucos segundos</p>
+    <div class="marca"><span class="bola">M</span> Minhas Finanças</div>
+
+    <div>
+        <h1>Criar conta</h1>
+        <p class="subtitulo">Comece a organizar suas finanças hoje.</p>
+    </div>
 
     <?php if ($erro): ?><div class="alerta erro"><?= e($erro) ?></div><?php endif; ?>
 
     <form method="post">
-        <label>Seu nome</label>
+        <label>Nome</label>
         <input type="text" name="nome" value="<?= e($_POST['nome'] ?? '') ?>" required>
 
         <label>E-mail</label>
@@ -61,9 +65,9 @@ require __DIR__ . '/../includes/header.php';
         <label>Senha (mínimo 6 caracteres)</label>
         <input type="password" name="senha" required>
 
-        <button type="submit" class="btn" style="width:100%;">Criar conta</button>
+        <button type="submit" class="btn" style="width:100%; justify-content:center;">Criar conta</button>
     </form>
-    <p style="text-align:center; margin-top:1.2rem; font-size:0.9rem;">
+    <p style="text-align:center; font-size:14px; margin:0;">
         Já tem conta? <a href="/auth/login.php">Entrar</a>
     </p>
 </div>
