@@ -3,12 +3,12 @@ require __DIR__ . '/config.php';
 require __DIR__ . '/includes/functions.php';
 exigir_login();
 
-$familia_id = $_SESSION['familia_id'];
+$usuario_id = $_SESSION['usuario_id'];
 
 // Exclusão de lançamento
 if (isset($_GET['excluir'])) {
-    $stmt = $pdo->prepare('DELETE FROM transacoes WHERE id = ? AND familia_id = ?');
-    $stmt->execute([$_GET['excluir'], $familia_id]);
+    $stmt = $pdo->prepare('DELETE FROM financas_transacoes WHERE id = ? AND usuario_id = ?');
+    $stmt->execute([$_GET['excluir'], $usuario_id]);
     header('Location: /transacoes.php' . (isset($_GET['mes']) ? '?mes=' . urlencode($_GET['mes']) : ''));
     exit;
 }
@@ -17,14 +17,13 @@ if (isset($_GET['excluir'])) {
 $mes = $_GET['mes'] ?? date('Y-m');
 
 $stmt = $pdo->prepare("
-    SELECT t.*, c.nome AS categoria_nome, c.cor AS categoria_cor, u.nome AS usuario_nome
-    FROM transacoes t
-    JOIN categorias c ON c.id = t.categoria_id
-    JOIN usuarios u ON u.id = t.usuario_id
-    WHERE t.familia_id = ? AND DATE_FORMAT(t.data_transacao, '%Y-%m') = ?
+    SELECT t.*, c.nome AS categoria_nome, c.cor AS categoria_cor
+    FROM financas_transacoes t
+    JOIN financas_categorias c ON c.id = t.categoria_id
+    WHERE t.usuario_id = ? AND DATE_FORMAT(t.data_transacao, '%Y-%m') = ?
     ORDER BY t.data_transacao DESC, t.id DESC
 ");
-$stmt->execute([$familia_id, $mes]);
+$stmt->execute([$usuario_id, $mes]);
 $transacoes = $stmt->fetchAll();
 
 $titulo_pagina = 'Lançamentos';
@@ -50,7 +49,7 @@ require __DIR__ . '/includes/header.php';
     <table class="razao">
         <thead>
             <tr>
-                <th>Data</th><th>Descrição</th><th>Categoria</th><th>Quem</th>
+                <th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th>
                 <th style="text-align:right;">Valor</th><th></th>
             </tr>
         </thead>
@@ -58,11 +57,11 @@ require __DIR__ . '/includes/header.php';
         <?php foreach ($transacoes as $t): ?>
             <tr>
                 <td><?= formatar_data($t['data_transacao']) ?></td>
-                <td><?= e($t['descricao']) ?: '<span style="color:#999;">—</span>' ?></td>
-                <td><span class="selo" style="color: <?= e($t['categoria_cor']) ?>;"><?= e($t['categoria_nome']) ?></span></td>
-                <td><?= e($t['usuario_nome']) ?></td>
-                <td style="text-align:right;" class="valor-mono <?= $t['tipo']==='receita' ? 'valor-receita' : 'valor-despesa' ?>">
-                    <?= $t['tipo']==='receita' ? '+' : '-' ?> <?= formatar_moeda($t['valor']) ?>
+                <td><?= e($t['descricao']) ?: '<span style="color:var(--text-muted);">—</span>' ?></td>
+                <td><span class="selo" style="color: <?= e($t['categoria_cor']) ?>;"><span class="ponto"></span><?= e($t['categoria_nome']) ?></span></td>
+                <td><span class="selo-tipo <?= e($t['tipo']) ?>"><?= e(rotulo_tipo($t['tipo'])) ?></span></td>
+                <td style="text-align:right;" class="valor-mono valor-<?= e($t['tipo']) ?>">
+                    <?= $t['tipo']==='despesa' ? '-' : '+' ?> <?= formatar_moeda($t['valor']) ?>
                 </td>
                 <td class="acoes-tabela">
                     <a href="/transacao_form.php?id=<?= e((string)$t['id']) ?>">editar</a>

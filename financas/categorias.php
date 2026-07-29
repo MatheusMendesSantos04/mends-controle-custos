@@ -3,19 +3,24 @@ require __DIR__ . '/config.php';
 require __DIR__ . '/includes/functions.php';
 exigir_login();
 
-$familia_id = $_SESSION['familia_id'];
+$usuario_id = $_SESSION['usuario_id'];
 $erro = '';
+$aba = $_GET['tipo'] ?? 'despesa';
+if (!in_array($aba, ['receita', 'despesa', 'investimento'], true)) {
+    $aba = 'despesa';
+}
 
 // Exclusão
 if (isset($_GET['excluir'])) {
-    // Impede excluir categoria que já tem lançamentos, para não perder o histórico
-    $stmt = $pdo->prepare('SELECT COUNT(*) AS total FROM transacoes WHERE categoria_id = ? AND familia_id = ?');
-    $stmt->execute([$_GET['excluir'], $familia_id]);
+    $stmt = $pdo->prepare('SELECT COUNT(*) AS total FROM financas_transacoes WHERE categoria_id = ? AND usuario_id = ?');
+    $stmt->execute([$_GET['excluir'], $usuario_id]);
     if ($stmt->fetch()['total'] > 0) {
         $erro = 'Não é possível excluir uma categoria que já tem lançamentos.';
     } else {
-        $stmt = $pdo->prepare('DELETE FROM categorias WHERE id = ? AND familia_id = ?');
-        $stmt->execute([$_GET['excluir'], $familia_id]);
+        $stmt = $pdo->prepare('DELETE FROM financas_categorias WHERE id = ? AND usuario_id = ?');
+        $stmt->execute([$_GET['excluir'], $usuario_id]);
+        header('Location: /categorias.php?tipo=' . urlencode($aba));
+        exit;
     }
 }
 
@@ -23,20 +28,20 @@ if (isset($_GET['excluir'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nome = trim($_POST['nome'] ?? '');
     $tipo = $_POST['tipo'] ?? 'despesa';
-    $cor  = $_POST['cor'] ?? '#2F4F3E';
 
     if ($nome === '') {
         $erro = 'Informe um nome para a categoria.';
     } else {
-        $stmt = $pdo->prepare('INSERT INTO categorias (familia_id, nome, tipo, cor) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$familia_id, $nome, $tipo, $cor]);
-        header('Location: /categorias.php');
+        $cor = proxima_cor_categoria($pdo, $usuario_id);
+        $stmt = $pdo->prepare('INSERT INTO financas_categorias (usuario_id, nome, tipo, cor) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$usuario_id, $nome, $tipo, $cor]);
+        header('Location: /categorias.php?tipo=' . urlencode($tipo));
         exit;
     }
 }
 
-$stmt = $pdo->prepare('SELECT * FROM categorias WHERE familia_id = ? ORDER BY tipo, nome');
-$stmt->execute([$familia_id]);
+$stmt = $pdo->prepare('SELECT * FROM financas_categorias WHERE usuario_id = ? AND tipo = ? ORDER BY ordem, nome');
+$stmt->execute([$usuario_id, $aba]);
 $categorias = $stmt->fetchAll();
 
 $titulo_pagina = 'Categorias';
@@ -47,44 +52,36 @@ require __DIR__ . '/includes/header.php';
 
 <?php if ($erro): ?><div class="alerta erro"><?= e($erro) ?></div><?php endif; ?>
 
-<div class="cartao" style="max-width:520px;">
-    <h2 style="font-size:1.05rem;">Nova categoria</h2>
+<div class="abas-tipo">
+    <a href="?tipo=receita" class="<?= $aba==='receita' ? 'ativo' : '' ?>">Receitas</a>
+    <a href="?tipo=despesa" class="<?= $aba==='despesa' ? 'ativo' : '' ?>">Despesas</a>
+    <a href="?tipo=investimento" class="<?= $aba==='investimento' ? 'ativo' : '' ?>">Investir</a>
+</div>
+
+<div class="cartao" style="max-width:480px;">
+    <h2 style="font-size:1.05rem;">Nova categoria em <?= e(rotulo_tipo($aba)) ?></h2>
     <form method="post">
-        <div class="linha-form">
-            <div>
-                <label>Nome</label>
-                <input type="text" name="nome" required>
-            </div>
-            <div>
-                <label>Tipo</label>
-                <select name="tipo">
-                    <option value="despesa">Despesa</option>
-                    <option value="receita">Receita</option>
-                </select>
-            </div>
-        </div>
-        <label>Cor (usada nas etiquetas)</label>
-        <input type="color" name="cor" value="#2F4F3E" style="height:2.6rem; padding:0.2rem;">
-        <button type="submit" class="btn">Adicionar categoria</button>
+        <input type="hidden" name="tipo" value="<?= e($aba) ?>">
+        <label>Nome</label>
+        <input type="text" name="nome" placeholder="Ex: Pet, Academia..." required>
+        <button type="submit" class="btn">+ Adicionar categoria</button>
     </form>
 </div>
 
 <div class="cartao">
-    <table class="razao">
-        <thead><tr><th>Categoria</th><th>Tipo</th><th></th></tr></thead>
-        <tbody>
+    <?php if (!$categorias): ?>
+        <p class="vazio">Nenhuma categoria de <?= mb_strtolower(e(rotulo_tipo($aba))) ?> ainda.</p>
+    <?php else: ?>
+    <div class="grade-categorias">
         <?php foreach ($categorias as $c): ?>
-            <tr>
-                <td><span class="selo" style="color: <?= e($c['cor']) ?>;"><?= e($c['nome']) ?></span></td>
-                <td><?= $c['tipo']==='receita' ? 'Receita' : 'Despesa' ?></td>
-                <td class="acoes-tabela">
-                    <a href="?excluir=<?= e((string)$c['id']) ?>" class="excluir"
-                       onclick="return confirm('Excluir esta categoria?');">excluir</a>
-                </td>
-            </tr>
+            <div class="cartao-categoria" style="--cor-cat: <?= e($c['cor']) ?>;">
+                <span class="nome-cat"><?= e($c['nome']) ?></span>
+                <a href="?tipo=<?= e($aba) ?>&excluir=<?= e((string)$c['id']) ?>" class="excluir"
+                   onclick="return confirm('Excluir esta categoria?');">excluir</a>
+            </div>
         <?php endforeach; ?>
-        </tbody>
-    </table>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

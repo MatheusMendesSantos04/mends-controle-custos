@@ -8,13 +8,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $senha = $_POST['senha'] ?? '';
 
-    $stmt = $pdo->prepare('SELECT * FROM usuarios WHERE email = ?');
+    $stmt = $pdo->prepare('SELECT * FROM financas_usuarios WHERE email = ?');
     $stmt->execute([$email]);
     $usuario = $stmt->fetch();
 
     if ($usuario && password_verify($senha, $usuario['senha_hash'])) {
         $_SESSION['usuario_id']   = $usuario['id'];
-        $_SESSION['familia_id']   = $usuario['familia_id'];
         $_SESSION['usuario_nome'] = $usuario['nome'];
         header('Location: /index.php');
         exit;

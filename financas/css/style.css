@@ -1,48 +1,117 @@
 /* ==========================================================
-   Controle de Finanças da Família
-   Identidade visual: "livro-razão" — ledger de contabilidade,
-   tinta preta para receitas, tinta vermelha para despesas,
-   números alinhados como em uma planilha contábil.
+   Controle de Finanças — tema colorido, painel interativo.
+   Paleta categórica validada (contraste + daltonismo) definida
+   em variáveis CSS; claro/escuro seguem o tema do sistema.
    ========================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --paper: #EDEFE7;
-    --paper-line: #D9DCCE;
-    --ink: #1F2A24;
-    --ledger-green: #2F4F3E;
-    --ledger-green-dark: #223B2F;
-    --ink-red: #A73C3C;
-    --gold: #B4863A;
-    --card-bg: #F7F8F3;
-    --shadow: rgba(31, 42, 36, 0.08);
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-2: #ffffff;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --border: rgba(11, 11, 11, 0.10);
+    --brand: #2a78d6;
+    --brand-dark: #184f95;
+
+    --serie-1: #2a78d6; /* azul */
+    --serie-2: #eb6834; /* laranja */
+    --serie-3: #1baf7a; /* água */
+    --serie-4: #eda100; /* amarelo */
+    --serie-5: #e87ba4; /* magenta */
+    --serie-6: #008300; /* verde */
+    --serie-7: #4a3aa7; /* violeta */
+    --serie-8: #e34948; /* vermelho */
+
+    --receita: #1baf7a;
+    --despesa: #e34948;
+    --investir: #2a78d6;
+    --good-text: #006300;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+        color-scheme: dark;
+        --page: #0d0d0d;
+        --surface: #1a1a19;
+        --surface-2: #212120;
+        --text-primary: #ffffff;
+        --text-secondary: #c3c2b7;
+        --text-muted: #898781;
+        --gridline: #2c2c2a;
+        --border: rgba(255, 255, 255, 0.10);
+        --brand: #3987e5;
+        --brand-dark: #86b6ef;
+
+        --serie-1: #3987e5;
+        --serie-2: #d95926;
+        --serie-3: #199e70;
+        --serie-4: #c98500;
+        --serie-5: #d55181;
+        --serie-6: #008300;
+        --serie-7: #9085e9;
+        --serie-8: #e66767;
+
+        --receita: #199e70;
+        --despesa: #e66767;
+        --investir: #3987e5;
+        --good-text: #0ca30c;
+    }
+}
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #212120;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --border: rgba(255, 255, 255, 0.10);
+    --brand: #3987e5;
+    --brand-dark: #86b6ef;
+
+    --serie-1: #3987e5;
+    --serie-2: #d95926;
+    --serie-3: #199e70;
+    --serie-4: #c98500;
+    --serie-5: #d55181;
+    --serie-6: #008300;
+    --serie-7: #9085e9;
+    --serie-8: #e66767;
+
+    --receita: #199e70;
+    --despesa: #e66767;
+    --investir: #3987e5;
+    --good-text: #0ca30c;
 }
 
 * { box-sizing: border-box; }
 
 body {
     margin: 0;
-    background: var(--paper);
-    background-image:
-        linear-gradient(var(--paper-line) 1px, transparent 1px);
-    background-size: 100% 2.1rem;
-    color: var(--ink);
-    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, "Segoe UI", sans-serif;
     line-height: 1.5;
 }
 
 h1, h2, h3 {
-    font-family: 'Fraunces', serif;
-    font-weight: 700;
+    font-weight: 800;
     margin: 0 0 0.4em;
-    color: var(--ledger-green-dark);
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
 }
 
-a { color: var(--ledger-green-dark); }
+a { color: var(--brand); }
 
 .wrapper {
-    max-width: 980px;
+    max-width: 1040px;
     margin: 0 auto;
     padding: 0 1.5rem 3rem;
 }
@@ -52,84 +121,120 @@ a { color: var(--ledger-green-dark); }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.3rem 1.5rem;
-    background: var(--ledger-green);
-    color: #F4F5EF;
-    border-bottom: 4px double var(--gold);
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, var(--serie-1), var(--serie-7));
+    color: #fff;
+    flex-wrap: wrap;
+    gap: 0.6rem;
 }
 
 .topbar .marca {
-    font-family: 'Fraunces', serif;
-    font-size: 1.3rem;
-    font-weight: 700;
+    font-size: 1.25rem;
+    font-weight: 800;
     color: #fff;
     text-decoration: none;
-    letter-spacing: 0.02em;
+    letter-spacing: -0.01em;
 }
 
 .topbar nav a {
-    color: #E7E9DE;
+    color: rgba(255,255,255,0.85);
     text-decoration: none;
-    margin-left: 1.4rem;
+    margin-left: 1.2rem;
     font-size: 0.92rem;
-    font-weight: 500;
-    border-bottom: 1px solid transparent;
-    padding-bottom: 2px;
+    font-weight: 600;
+    padding: 0.3rem 0;
+    border-bottom: 2px solid transparent;
 }
 .topbar nav a:hover,
 .topbar nav a.ativo {
-    border-bottom-color: var(--gold);
+    border-bottom-color: #fff;
     color: #fff;
 }
 
 /* ---------- Cartões / caixas ---------- */
 .cartao {
-    background: var(--card-bg);
-    border: 1px solid var(--paper-line);
-    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
     padding: 1.4rem 1.6rem;
     margin-bottom: 1.4rem;
-    box-shadow: 0 2px 6px var(--shadow);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
+/* ---------- Navegação de mês ---------- */
+.nav-mes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin: 0.2rem 0 0.4rem;
+}
+.nav-mes a {
+    width: 2.1rem;
+    height: 2.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 700;
+}
+.nav-mes a:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+.nav-mes .mes-atual {
+    font-weight: 700;
+    font-size: 1.05rem;
+    min-width: 11rem;
+    text-align: center;
+    text-transform: capitalize;
+}
+
+/* ---------- Cartões de resumo (stat tiles) ---------- */
 .grade-resumo {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
-    margin: 1.6rem 0;
+    margin: 1.2rem 0 1.6rem;
 }
-@media (max-width: 700px) {
+@media (max-width: 860px) {
+    .grade-resumo { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
     .grade-resumo { grid-template-columns: 1fr; }
 }
 
 .resumo-item {
-    background: var(--card-bg);
-    border: 1px solid var(--paper-line);
-    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
     padding: 1.1rem 1.3rem;
-    text-align: center;
+    border-left: 4px solid var(--cor-item, var(--brand));
 }
 .resumo-item .rotulo {
     font-size: 0.78rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #5B6B5F;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
     display: block;
-    margin-bottom: 0.3rem;
-}
-.resumo-item .numero {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 1.5rem;
+    margin-bottom: 0.35rem;
     font-weight: 600;
 }
-.resumo-item.receita .numero { color: var(--ledger-green-dark); }
-.resumo-item.despesa .numero { color: var(--ink-red); }
-.resumo-item.saldo .numero {
-    border-bottom: 3px double var(--gold);
-    padding-bottom: 0.15em;
+.resumo-item .numero {
+    font-variant-numeric: tabular-nums;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
 }
+.resumo-item.receita { --cor-item: var(--receita); }
+.resumo-item.despesa { --cor-item: var(--despesa); }
+.resumo-item.investir { --cor-item: var(--investir); }
+.resumo-item.saldo { --cor-item: var(--text-muted); }
+.resumo-item.saldo.positivo { --cor-item: var(--good-text); }
+.resumo-item.saldo.negativo { --cor-item: var(--despesa); }
 
-/* ---------- Tabelas estilo razão contábil ---------- */
+/* ---------- Tabelas ---------- */
 table.razao {
     width: 100%;
     border-collapse: collapse;
@@ -137,75 +242,165 @@ table.razao {
 }
 table.razao th {
     text-align: left;
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 0.76rem;
+    font-size: 0.74rem;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #5B6B5F;
-    border-bottom: 2px solid var(--ledger-green);
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--gridline);
     padding: 0.5rem 0.6rem;
+    font-weight: 700;
 }
 table.razao td {
-    padding: 0.55rem 0.6rem;
-    border-bottom: 1px solid var(--paper-line);
+    padding: 0.6rem 0.6rem;
+    border-bottom: 1px solid var(--gridline);
     vertical-align: middle;
 }
-table.razao tr:hover td { background: rgba(47, 79, 62, 0.04); }
-.valor-mono { font-family: 'IBM Plex Mono', monospace; }
-.valor-receita { color: var(--ledger-green-dark); }
-.valor-despesa { color: var(--ink-red); }
+table.razao tr:hover td { background: rgba(127,127,127,0.05); }
+.valor-mono { font-variant-numeric: tabular-nums; font-weight: 600; }
+.valor-receita { color: var(--receita); }
+.valor-despesa { color: var(--despesa); }
+.valor-investimento { color: var(--investir); }
 
-/* ---------- "Carimbo" de categoria ---------- */
+/* ---------- Selo / chip de categoria ---------- */
 .selo {
-    display: inline-block;
-    padding: 0.15rem 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.65rem 0.2rem 0.45rem;
     border-radius: 999px;
-    border: 1.5px solid currentColor;
-    font-size: 0.74rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-size: 0.8rem;
     font-weight: 600;
-    letter-spacing: 0.02em;
-    transform: rotate(-1.5deg);
+    color: var(--text-primary);
 }
+.selo .ponto {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+.selo-tipo {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+}
+.selo-tipo.receita { background: var(--receita); }
+.selo-tipo.despesa { background: var(--despesa); }
+.selo-tipo.investimento { background: var(--investir); }
+
+/* ---------- Abas de tipo (categorias) ---------- */
+.abas-tipo {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+}
+.abas-tipo a {
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.88rem;
+}
+.abas-tipo a.ativo { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+.grade-categorias {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.7rem;
+}
+.cartao-categoria {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    border-left: 4px solid var(--cor-cat, var(--brand));
+}
+.cartao-categoria .nome-cat { font-weight: 600; }
+.cartao-categoria a.excluir { font-size: 0.78rem; }
 
 /* ---------- Formulários ---------- */
 label {
     display: block;
     font-size: 0.82rem;
-    font-weight: 600;
-    margin: 0.9rem 0 0.3rem;
-    color: var(--ledger-green-dark);
+    font-weight: 700;
+    margin: 0.9rem 0 0.35rem;
+    color: var(--text-secondary);
 }
 input, select, textarea {
     width: 100%;
-    padding: 0.55rem 0.7rem;
-    border: 1px solid #B9C0AE;
-    border-radius: 5px;
-    background: #fff;
-    font-family: 'IBM Plex Sans', sans-serif;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-family: inherit;
     font-size: 0.94rem;
 }
 input:focus, select:focus, textarea:focus {
-    outline: 2px solid var(--gold);
+    outline: 2px solid var(--brand);
     outline-offset: 1px;
 }
 
+.seletor-tipo {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin: 0.35rem 0 0.9rem;
+}
+.seletor-tipo label {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 0.5rem;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+}
+.seletor-tipo input { position: absolute; opacity: 0; width: 0; height: 0; }
+.seletor-tipo input:checked + label,
+.seletor-tipo label.selecionado {
+    color: #fff;
+    border-color: transparent;
+}
+.seletor-tipo .opt-receita input:checked + label { background: var(--receita); }
+.seletor-tipo .opt-despesa input:checked + label { background: var(--despesa); }
+.seletor-tipo .opt-investimento input:checked + label { background: var(--investir); }
+
 .btn {
     display: inline-block;
-    background: var(--ledger-green);
+    background: var(--brand);
     color: #fff;
     border: none;
-    padding: 0.6rem 1.3rem;
-    border-radius: 5px;
+    padding: 0.65rem 1.3rem;
+    border-radius: 999px;
     font-size: 0.92rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     text-decoration: none;
     margin-top: 1rem;
 }
-.btn:hover { background: var(--ledger-green-dark); }
-.btn.perigo { background: var(--ink-red); }
-.btn.perigo:hover { background: #832C2C; }
-.btn.secundario { background: transparent; color: var(--ledger-green-dark); border: 1.5px solid var(--ledger-green); }
+.btn:hover { background: var(--brand-dark); }
+.btn.perigo { background: var(--despesa); }
+.btn.secundario { background: transparent; color: var(--text-primary); border: 1.5px solid var(--border); }
 
 .linha-form {
     display: grid;
@@ -220,39 +415,60 @@ input:focus, select:focus, textarea:focus {
 .auth-caixa {
     max-width: 400px;
     margin: 4rem auto;
-    background: var(--card-bg);
-    border: 1px solid var(--paper-line);
-    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
     padding: 2rem 2.2rem;
-    box-shadow: 0 4px 16px var(--shadow);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
 }
 .auth-caixa h1 { font-size: 1.5rem; text-align: center; }
 .auth-caixa p.subtitulo {
     text-align: center;
-    color: #5B6B5F;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     margin-top: -0.4rem;
 }
 
 .alerta {
     padding: 0.7rem 1rem;
-    border-radius: 5px;
+    border-radius: 8px;
     font-size: 0.88rem;
     margin-bottom: 1rem;
+    font-weight: 600;
 }
-.alerta.erro { background: #F6E2E2; color: var(--ink-red); border: 1px solid #E0B0B0; }
-.alerta.sucesso { background: #E4EDE3; color: var(--ledger-green-dark); border: 1px solid #B8CFB4; }
+.alerta.erro { background: rgba(227,73,72,0.12); color: var(--despesa); }
+.alerta.sucesso { background: rgba(27,175,122,0.12); color: var(--receita); }
 
 .vazio {
     text-align: center;
     padding: 2.5rem 1rem;
-    color: #6B7A6E;
-    font-style: italic;
+    color: var(--text-muted);
 }
 
 .acoes-tabela a {
     font-size: 0.82rem;
     margin-right: 0.7rem;
     text-decoration: none;
+    color: var(--text-secondary);
 }
-.acoes-tabela a.excluir { color: var(--ink-red); }
+.acoes-tabela a.excluir { color: var(--despesa); }
+
+.legenda-doughnut {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.1rem;
+    margin-top: 1rem;
+    justify-content: center;
+}
+.legenda-doughnut span.item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+}
+.legenda-doughnut span.ponto {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 999px;
+}

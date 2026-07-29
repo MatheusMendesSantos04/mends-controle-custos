@@ -6,10 +6,10 @@
  * que você criar no painel da Hostinger (hPanel > Bancos de Dados MySQL).
  */
 
-define('DB_HOST', 'localhost');       // normalmente 'localhost' na Hostinger
-define('DB_NAME', 'u000000000_financas'); // nome do banco criado no hPanel
-define('DB_USER', 'u000000000_usuario');  // usuário do banco criado no hPanel
-define('DB_PASS', 'sua_senha_aqui');      // senha do banco
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'u958537310_mendsweb');
+define('DB_USER', 'u958537310_mendesweb_com');
+define('DB_PASS', '8jF>9W/YRUS');
 
 try {
     $pdo = new PDO(
