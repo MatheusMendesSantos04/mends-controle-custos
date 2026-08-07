@@ -12,6 +12,7 @@ $dados = [
     'tipo' => 'despesa',
     'valor' => '',
     'categoria_id' => '',
+    'cartao_id' => '',
     'descricao' => '',
     'data_transacao' => date('Y-m-d'),
 ];
@@ -30,9 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dados['tipo']            = $_POST['tipo'] ?? 'despesa';
     $dados['valor']           = str_replace(',', '.', $_POST['valor'] ?? '');
     $dados['categoria_id']    = $_POST['categoria_id'] ?? '';
+    $dados['cartao_id']       = $_POST['cartao_id'] ?? '';
     $dados['descricao']       = trim($_POST['descricao'] ?? '');
     $dados['data_transacao']  = $_POST['data_transacao'] ?? date('Y-m-d');
     $id_edicao                = $_POST['id'] ?? null;
+    $parcelas                 = $dados['tipo'] === 'despesa' ? max(1, (int) ($_POST['parcelas'] ?? 1)) : 1;
+    $cartao_id                = $dados['cartao_id'] !== '' ? (int) $dados['cartao_id'] : null;
 
     if (!is_numeric($dados['valor']) || (float)$dados['valor'] <= 0) {
         $erro = 'Informe um valor válido, maior que zero.';
@@ -42,22 +46,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($id_edicao) {
             $stmt = $pdo->prepare("
                 UPDATE financas_transacoes
-                SET tipo=?, valor=?, categoria_id=?, descricao=?, data_transacao=?
+                SET tipo=?, valor=?, categoria_id=?, cartao_id=?, descricao=?, data_transacao=?
                 WHERE id=? AND usuario_id=?
             ");
             $stmt->execute([
-                $dados['tipo'], $dados['valor'], $dados['categoria_id'],
+                $dados['tipo'], $dados['valor'], $dados['categoria_id'], $cartao_id,
                 $dados['descricao'], $dados['data_transacao'], $id_edicao, $usuario_id
             ]);
-        } else {
+        } elseif ($parcelas <= 1) {
             $stmt = $pdo->prepare("
-                INSERT INTO financas_transacoes (usuario_id, categoria_id, tipo, valor, descricao, data_transacao)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO financas_transacoes (usuario_id, categoria_id, cartao_id, tipo, valor, descricao, data_transacao)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
-                $usuario_id, $dados['categoria_id'],
+                $usuario_id, $dados['categoria_id'], $cartao_id,
                 $dados['tipo'], $dados['valor'], $dados['descricao'], $dados['data_transacao']
             ]);
+        } else {
+            // Compra parcelada: gera uma linha por parcela, distribuída nos meses certos
+            $cartao = null;
+            if ($cartao_id) {
+                $stmt = $pdo->prepare('SELECT * FROM financas_cartoes WHERE id = ? AND usuario_id = ?');
+                $stmt->execute([$cartao_id, $usuario_id]);
+                $cartao = $stmt->fetch() ?: null;
+            }
+
+            $valor_total = round((float) $dados['valor'], 2);
+            $valor_parcela = round($valor_total / $parcelas, 2);
+            $ultima_parcela = round($valor_total - ($valor_parcela * ($parcelas - 1)), 2);
+            $datas = calcular_datas_parcelas($dados['data_transacao'], $cartao, $parcelas);
+            $grupo = gerar_grupo_parcela();
+
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare("
+                INSERT INTO financas_transacoes
+                    (usuario_id, categoria_id, cartao_id, grupo_parcela, numero_parcela, total_parcelas, tipo, valor, descricao, data_transacao)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            for ($i = 0; $i < $parcelas; $i++) {
+                $valor_desta = $i === $parcelas - 1 ? $ultima_parcela : $valor_parcela;
+                $stmt->execute([
+                    $usuario_id, $dados['categoria_id'], $cartao_id, $grupo, $i + 1, $parcelas,
+                    $dados['tipo'], $valor_desta, $dados['descricao'], $datas[$i]
+                ]);
+            }
+            $pdo->commit();
         }
         header('Location: /transacoes.php');
         exit;
@@ -72,6 +105,10 @@ foreach ($todas_categorias as $c) {
     $categorias_por_tipo[$c['tipo']][] = $c;
 }
 
+$stmt = $pdo->prepare('SELECT id, nome FROM financas_cartoes WHERE usuario_id = ? ORDER BY nome');
+$stmt->execute([$usuario_id]);
+$cartoes = $stmt->fetchAll();
+
 $titulo_pagina = $edicao ? 'Editar lançamento' : 'Novo lançamento';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -80,6 +117,12 @@ require __DIR__ . '/includes/header.php';
 
 <div class="cartao" style="max-width:560px;">
     <?php if ($erro): ?><div class="alerta erro"><?= e($erro) ?></div><?php endif; ?>
+    <?php if ($dados['total_parcelas'] ?? null): ?>
+        <div class="alerta" style="background:var(--color-accent-100); color:var(--color-accent-800);">
+            Esta é a parcela <?= (int)$dados['numero_parcela'] ?>/<?= (int)$dados['total_parcelas'] ?> de uma compra parcelada.
+            Editar aqui altera só esta parcela.
+        </div>
+    <?php endif; ?>
 
     <form method="post" id="form-transacao">
         <?php if ($dados['id']): ?><input type="hidden" name="id" value="<?= e((string)$dados['id']) ?>"><?php endif; ?>
@@ -102,7 +145,7 @@ require __DIR__ . '/includes/header.php';
 
         <div class="linha-form">
             <div>
-                <label>Valor (R$)</label>
+                <label>Valor (R$)<?php if (!$edicao): ?> — total da compra<?php endif; ?></label>
                 <input type="text" name="valor" value="<?= e((string)$dados['valor']) ?>" placeholder="Ex: 150,00" required>
             </div>
             <div>
@@ -129,6 +172,23 @@ require __DIR__ . '/includes/header.php';
             <p style="font-size:13px; color:var(--color-neutral-700);">Você ainda não tem categorias. <a href="/categorias.php">Crie uma primeiro</a>.</p>
         <?php endif; ?>
 
+        <div id="bloco-cartao">
+            <label>Cartão (opcional)</label>
+            <select name="cartao_id">
+                <option value="">Nenhum (dinheiro/pix/débito)</option>
+                <?php foreach ($cartoes as $c): ?>
+                    <option value="<?= e((string)$c['id']) ?>" <?= (string)$c['id'] === (string)$dados['cartao_id'] ? 'selected' : '' ?>>
+                        <?= e($c['nome']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <?php if (!$edicao): ?>
+            <label>Parcelar em quantas vezes?</label>
+            <input type="number" name="parcelas" min="1" max="48" value="1">
+            <?php endif; ?>
+        </div>
+
         <label>Descrição (opcional)</label>
         <input type="text" name="descricao" value="<?= e($dados['descricao']) ?>" placeholder="Ex: Supermercado do mês">
 
@@ -140,9 +200,11 @@ require __DIR__ . '/includes/header.php';
 </div>
 
 <script>
-// Filtra as opções de categoria conforme o tipo escolhido
+// Filtra as opções de categoria conforme o tipo escolhido, e só mostra
+// cartão/parcelamento quando o tipo é despesa.
 const radios = document.querySelectorAll('input[name="tipo"]');
 const select = document.getElementById('select-categoria');
+const blocoCartao = document.getElementById('bloco-cartao');
 
 function filtrarCategorias() {
     const tipoAtual = document.querySelector('input[name="tipo"]:checked').value;
@@ -153,6 +215,7 @@ function filtrarCategorias() {
     if (selecionada && selecionada.dataset.tipo && selecionada.dataset.tipo !== tipoAtual) {
         select.value = '';
     }
+    blocoCartao.style.display = tipoAtual === 'despesa' ? 'block' : 'none';
 }
 radios.forEach(r => r.addEventListener('change', filtrarCategorias));
 filtrarCategorias();

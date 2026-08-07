@@ -44,6 +44,34 @@ $stmt = $pdo->prepare('SELECT * FROM financas_categorias WHERE usuario_id = ? AN
 $stmt->execute([$usuario_id, $aba]);
 $categorias = $stmt->fetchAll();
 
+// Tendência dos últimos 6 meses por categoria (sparkline)
+$dataRef = date('Y-m-01');
+$stmt = $pdo->prepare("
+    SELECT categoria_id, DATE_FORMAT(data_transacao, '%Y-%m') AS mes, SUM(valor) AS total
+    FROM financas_transacoes
+    WHERE usuario_id = ? AND tipo = ? AND data_transacao >= DATE_SUB(?, INTERVAL 5 MONTH)
+    GROUP BY categoria_id, mes
+");
+$stmt->execute([$usuario_id, $aba, $dataRef]);
+$mensal_por_categoria = [];
+foreach ($stmt->fetchAll() as $l) {
+    $mensal_por_categoria[$l['categoria_id']][$l['mes']] = (float) $l['total'];
+}
+$meses_referencia = [];
+for ($i = 5; $i >= 0; $i--) {
+    $meses_referencia[] = date('Y-m', strtotime($dataRef . " -$i months"));
+}
+foreach ($categorias as &$c) {
+    $valores = [];
+    foreach ($meses_referencia as $m) {
+        $valores[] = $mensal_por_categoria[$c['id']][$m] ?? 0;
+    }
+    $max_local = max(1, ...$valores);
+    $c['sparkline'] = path_suave(escala_pontos($valores, 80, 24, $max_local));
+    $c['total_6_meses'] = array_sum($valores);
+}
+unset($c);
+
 $titulo_pagina = 'Categorias';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -75,10 +103,22 @@ require __DIR__ . '/includes/header.php';
     <?php else: ?>
     <div class="grade-categorias">
         <?php foreach ($categorias as $c): ?>
-            <div class="cartao-categoria" style="--cor-cat: <?= e($c['cor']) ?>;">
-                <span class="nome-cat"><?= e($c['nome']) ?></span>
-                <a href="?tipo=<?= e($aba) ?>&excluir=<?= e((string)$c['id']) ?>" class="excluir"
-                   onclick="return confirm('Excluir esta categoria?');">excluir</a>
+            <div class="cartao-categoria" style="flex-direction:column; align-items:stretch; gap:8px; --cor-cat: <?= e($c['cor']) ?>;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span class="nome-cat"><?= e($c['nome']) ?></span>
+                    <a href="?tipo=<?= e($aba) ?>&excluir=<?= e((string)$c['id']) ?>" class="excluir"
+                       onclick="return confirm('Excluir esta categoria?');">excluir</a>
+                </div>
+                <?php if ($c['total_6_meses'] > 0): ?>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <svg width="80" height="24" viewBox="0 0 80 24" class="sparkline">
+                        <path d="<?= e($c['sparkline']) ?>" fill="none" stroke="<?= e($c['cor']) ?>" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span style="font-size:12px; color:var(--color-neutral-700); white-space:nowrap;">
+                        <?= e(formatar_moeda($c['total_6_meses'])) ?> / 6m
+                    </span>
+                </div>
+                <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>

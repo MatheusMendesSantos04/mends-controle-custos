@@ -100,6 +100,7 @@ function segmentos_rosca(array $itens, float $raio = 70): array {
         $segmentos[] = [
             'nome' => $item['nome'],
             'cor' => $item['cor'],
+            'valor' => $item['valor'],
             'dasharray' => round($comprimento, 2) . ' ' . round($circunferencia - $comprimento, 2),
             'dashoffset' => -round($offset, 2),
             'pct' => round($fracao * 100),
@@ -116,6 +117,75 @@ function variacao_percentual(float $atual, float $anterior): ?float {
         return null;
     }
     return (($atual - $anterior) / $anterior) * 100;
+}
+
+// Calcula em qual mês cada parcela de uma compra cai, considerando o dia
+// de fechamento da fatura do cartão (se houver cartão selecionado).
+// Retorna um array de datas (Y-m-d) com $total_parcelas posições.
+function calcular_datas_parcelas(string $data_compra, ?array $cartao, int $total_parcelas): array {
+    $dt = new DateTime($data_compra);
+    $dia_compra = (int) $dt->format('j');
+
+    if ($cartao) {
+        // Se a compra foi feita depois do fechamento, só entra na fatura seguinte.
+        $offset_inicial = $dia_compra > (int) $cartao['dia_fechamento'] ? 2 : 1;
+    } else {
+        // Sem cartão (dinheiro/pix parcelado no boleto): a 1ª parcela é no mês da compra.
+        $offset_inicial = 0;
+    }
+
+    $datas = [];
+    for ($i = 0; $i < $total_parcelas; $i++) {
+        $data_parcela = clone $dt;
+        $data_parcela->modify('+' . ($offset_inicial + $i) . ' months');
+        $datas[] = $data_parcela->format('Y-m-d');
+    }
+    return $datas;
+}
+
+// Gera um identificador único para agrupar as parcelas de uma mesma compra
+function gerar_grupo_parcela(): string {
+    return bin2hex(random_bytes(16));
+}
+
+// Converte uma lista de valores em pontos (x,y) dentro de uma área de
+// desenho, usando uma escala compartilhada (mesmo $valor_maximo) — para
+// que várias séries no mesmo gráfico fiquem na mesma escala vertical.
+function escala_pontos(array $valores, float $largura, float $altura, float $valor_maximo): array {
+    $n = count($valores);
+    $pontos = [];
+    foreach ($valores as $i => $v) {
+        $x = $n > 1 ? ($i / ($n - 1)) * $largura : $largura / 2;
+        $y = $valor_maximo > 0 ? $altura - (($v / $valor_maximo) * $altura) : $altura;
+        $pontos[] = ['x' => round($x, 2), 'y' => round($y, 2)];
+    }
+    return $pontos;
+}
+
+// Monta o atributo "d" de um <path> SVG em curva suave que passa
+// exatamente por cada ponto dado (spline Catmull-Rom convertida em
+// curvas de Bézier cúbicas — ao contrário de uma suavização por ponto
+// médio, o pico real dos dados nunca fica "cortado").
+function path_suave(array $pontos): string {
+    $n = count($pontos);
+    if ($n < 2) {
+        return '';
+    }
+    $d = "M {$pontos[0]['x']} {$pontos[0]['y']}";
+    for ($i = 0; $i < $n - 1; $i++) {
+        $p0 = $pontos[max($i - 1, 0)];
+        $p1 = $pontos[$i];
+        $p2 = $pontos[$i + 1];
+        $p3 = $pontos[min($i + 2, $n - 1)];
+
+        $c1x = round($p1['x'] + ($p2['x'] - $p0['x']) / 6, 2);
+        $c1y = round($p1['y'] + ($p2['y'] - $p0['y']) / 6, 2);
+        $c2x = round($p2['x'] - ($p3['x'] - $p1['x']) / 6, 2);
+        $c2y = round($p2['y'] - ($p3['y'] - $p1['y']) / 6, 2);
+
+        $d .= " C {$c1x} {$c1y}, {$c2x} {$c2y}, {$p2['x']} {$p2['y']}";
+    }
+    return $d;
 }
 
 // Categorias padrão sugeridas para um usuário novo começar

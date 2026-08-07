@@ -74,6 +74,18 @@ if ($maior_categoria) {
     $variacao_media_categoria = variacao_percentual((float)$maior_categoria['total'], $media_categoria);
 }
 
+// Comprometimento por cartão (parcelas de despesa a partir do início do mês atual)
+$stmt = $pdo->prepare('
+    SELECT c.id, c.nome, c.limite, COALESCE(SUM(t.valor), 0) AS comprometido
+    FROM financas_cartoes c
+    LEFT JOIN financas_transacoes t ON t.cartao_id = c.id AND t.tipo = "despesa" AND t.data_transacao >= DATE_FORMAT(CURDATE(), "%Y-%m-01")
+    WHERE c.usuario_id = ? AND c.ativo = 1
+    GROUP BY c.id
+    ORDER BY c.nome
+');
+$stmt->execute([$usuario_id]);
+$cartoes_resumo = $stmt->fetchAll();
+
 // Últimos lançamentos do mês
 $stmt = $pdo->prepare("
     SELECT t.*, c.nome AS categoria_nome, c.cor AS categoria_cor
@@ -183,6 +195,27 @@ require __DIR__ . '/includes/header.php';
     </div>
 </div>
 
+<?php if ($cartoes_resumo): ?>
+<div class="cartao">
+    <h2>Cartões</h2>
+    <div class="grade-categorias">
+        <?php foreach ($cartoes_resumo as $c): ?>
+            <?php $pct_uso = $c['limite'] > 0 ? min(100, ((float)$c['comprometido'] / (float)$c['limite']) * 100) : 0; ?>
+            <div class="cartao-categoria" style="flex-direction:column; align-items:stretch; gap:6px; --cor-cat: var(--color-accent);">
+                <span class="nome-cat"><?= e($c['nome']) ?></span>
+                <div class="barra-progresso">
+                    <div class="barra-progresso-preenchida" style="width:<?= round($pct_uso) ?>%; background:<?= $pct_uso >= 90 ? 'var(--despesa)' : 'var(--color-accent)' ?>;"></div>
+                </div>
+                <span style="font-size:12px; color:var(--color-neutral-700);">
+                    <?= e(formatar_moeda((float)$c['comprometido'])) ?> de <?= e(formatar_moeda((float)$c['limite'])) ?>
+                </span>
+            </div>
+        <?php endforeach; ?>
+    </div>
+    <p style="margin-top:var(--space-3); font-size:14px;"><a href="/cartoes.php">Gerenciar cartões →</a></p>
+</div>
+<?php endif; ?>
+
 <div style="display:flex; justify-content:flex-end; margin-bottom:var(--space-6);">
     <a href="/transacao_form.php" class="btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -241,7 +274,7 @@ require __DIR__ . '/includes/header.php';
                 <?php foreach ($rosca as $seg): ?>
                     <div class="item">
                         <span class="rotulo-item"><span class="ponto" style="background:<?= e($seg['cor']) ?>;"></span><?= e($seg['nome']) ?></span>
-                        <span class="pct"><?= $seg['pct'] ?>%</span>
+                        <span class="pct"><?= e(formatar_moeda($seg['valor'])) ?> · <?= $seg['pct'] ?>%</span>
                     </div>
                 <?php endforeach; ?>
             </div>
